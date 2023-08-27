@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sistem Pemantauan Pada Alat Control Limbah Medis Menggunakan HDMI Display Berbasis Raspberry PI</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.1.2/dist/echarts.min.js"></script>
+
+    <style>
+       body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 20px;
+        }
+
+        .chart-container {
+            width: 400px;
+            height: 300px;
+            margin-right: 20px;
+        }
+
+        .led-indicator {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: red;
+        }
+
+        button {
+            display: inline-block;
+            margin: 10px 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+            cursor: pointer;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button.start {
+            background-color: #4CAF50; /* Green */
+        }
+
+        button.stop {
+            background-color: #E74C3C; /* Red */
+        }
+
+        button.repeat {
+            background-color: #F39C12; /* Yellow */
+        }
+
+        button.waste {
+            background-color: #3498db; /* Blue */
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #333;
+            color: white;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Sistem Monitoring & Controlling Pada Sistem Cerdas pengolahan Limbah Medis Menggunakan HDMI Display Berbasis Raspberry PI</h1>
+    </header>
+    
+    <div class="container">
+        <div id="chart" class="chart-container"></div>
+        <div id="led-indicator" class="led-indicator"></div>
+    </div>
+
+    <div style="display: flex; justify-content: center; margin-top: 10px;">
+        <button class="start" onclick="startCount()" style="margin-right: 10px;">Start System</button>
+        <button class="stop" onclick="stopCount()" style="margin-right: 10px;">Stop System</button>
+        <button class="repeat" onclick="repeatCount()" style="margin-right: 10px;">Repeat</button>
+        <button class="waste" onclick="wasteCount()">Waste</button>
+    </div>
+
+    <p style="text-align: center; margin-top: 20px;">&copy; 2023 Universitas Gunadarma. All rights reserved.</p>
+
+    <script>
+        var chart = echarts.init(document.getElementById('chart'));
+
+        var option = {
+            series: [{
+                type: 'gauge',
+                min: 0,
+                max: 14,
+                axisLine: {
+                    lineStyle: {
+                        width: 20
+                    }
+                },
+                pointer: {
+                    itemStyle: {
+                        color: 'auto'
+                    }
+                },
+                axisTick: {
+                    distance: -30,
+                    splitNumber: 5,
+                    lineStyle: {
+                        width: 2,
+                        color: '#999'
+                    }
+                },
+                splitLine: {
+                    distance: -30,
+                    length: 20,
+                    lineStyle: {
+                        width: 3,
+                        color: '#999'
+                    }
+                },
+                detail: {
+                    valueAnimation: true,
+                    formatter: '{value}'
+                },
+                data: [{
+                    value: 0,
+                    name: 'pH'
+                }]
+            }]
+        };
+
+        function getPH() {
+            $.ajax({
+                url: '/ph',
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    if (data.ph !== null) {
+                        option.series[0].data[0].value = data.ph.toFixed(2);
+                        chart.setOption(option);
+                    }
+                }
+            });
+        }
+
+        setInterval(getPH, 1000);
+
+        const ledIndicator = document.getElementById('led-indicator');
+
+        function updateLEDIndicator() {
+            $.ajax({
+                url: '/water_level',
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    const tandon5 = data.tandon5;
+                    if (tandon5 !== null) {
+                        if (tandon5 === 0) {
+                            ledIndicator.style.backgroundColor = "red"; // Low water level
+                        } else {
+                            ledIndicator.style.backgroundColor = "green";   // High water level
+                        }
+                    }
+                },
+                error: function(error) {
+                    console.error("AJAX request failed:", error);
+                }
+            });
+        }
+
+        setInterval(updateLEDIndicator, 1000);
+
+        function startCount() {
+            $.ajax({
+                url: '/start',
+                type: 'GET'
+            });
+        }
+
+        function stopCount() {
+            $.ajax({
+                url: '/stop',
+                type: 'GET'
+            });
+        }
+
+        function repeatCount() {
+            $.ajax({
+                url: '/repeat',
+                type: 'GET'
+            });
+        }
+
+        function wasteCount() {
+            $.ajax({
+                url: '/waste',
+                type: 'GET'
+            });
+        }
+    </script>
+</body>
+</html>
